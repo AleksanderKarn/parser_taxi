@@ -71,11 +71,15 @@ def connector(url, year, mileage):
             )
     if page == 0:
         driver.get(url)
+        try:
+            a = driver.find_elements(By.CLASS_NAME, "suggest-input-rORJM")
+            a[0].send_keys(year)
+            a[2].send_keys(mileage)
+            time.sleep(1)
+        except Exception as e:
+            print(e)
+            return 0
 
-        a = driver.find_elements(By.CLASS_NAME, "suggest-input-rORJM")
-        a[0].send_keys(year)
-        a[2].send_keys(mileage)
-        time.sleep(1)
 
         while True:
             try:
@@ -88,7 +92,13 @@ def connector(url, year, mileage):
                 print(e)
                 continue
 
-        pages = int(driver.find_element(By.CLASS_NAME, 'button-textBox-_SF60').text.split(' ')[1])
+        pages = driver.find_element(By.CLASS_NAME, 'button-textBox-_SF60').text.split(' ')[1]
+
+        if pages != 'не':
+            pages = int(pages)
+        else:
+            return 0
+
         if pages % 50 == 0:
             page_count = pages // 50
         else:
@@ -140,3 +150,5 @@ def _input():
     connector(url_avito[0], url_avito[1], url_avito[2])
 
     print('Работа парсера Окончена')
+
+
