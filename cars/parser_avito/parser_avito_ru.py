@@ -6,7 +6,7 @@ from selenium_stealth import stealth
 
 from cars.parser.funk_to_parser import get_data
 from list_auto_avito.models import CarListAvito
-from .setting_for_avitoparser import url
+from .setting_for_avitoparser import url, url_for_jac, url_for_kia_k5
 
 page = 0  # Текущая страница
 page_count = 0  # Всего страниц
@@ -146,9 +146,15 @@ def connector(url, year, mileage):
 
 def _input():
     data = get_data()  # данные авто для поиска в формате словаря
+    if data["mark"].upper() == "JAC":
+        connector(url_for_jac, data["year_from"], data["km_age_from"])
+        return
+    elif data["mark"].upper() == "KIA" and data["model"].upper() == "K5":
+        connector(url_for_kia_k5, data["year_from"], data["km_age_from"])
+        return
+
     url_avito = get_url(url, data)
     connector(url_avito[0], url_avito[1], url_avito[2])
 
     print('Работа парсера Окончена')
-
 
