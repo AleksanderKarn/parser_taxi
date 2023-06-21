@@ -6,4 +6,4 @@ from arenda_avito.models import ArendaCar
 class ArendaCarForm(forms.ModelForm):
     class Meta:
         model = ArendaCar
-        fields = ('mark', 'model','price', 'link')
+        fields = ('cars', 'price', 'taxopark', 'link', 'description', 'schedule', 'placement_date')

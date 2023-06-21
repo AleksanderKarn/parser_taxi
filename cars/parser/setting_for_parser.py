@@ -1,5 +1,7 @@
 URL = "https://auto.ru/-/ajax/desktop/listing/"
+
 URL_AUTO = "https://auto.ru/moskva/cars/"
+
 header = {
     "headers": {
         "accept": "*/*",
