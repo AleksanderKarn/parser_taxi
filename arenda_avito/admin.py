@@ -7,7 +7,8 @@ from .models import ArendaCar
 
 @admin.register(ArendaCar)
 class CarAdmin(admin.ModelAdmin):
-    list_display = ('taxopark', 'cars', 'price', 'schedule', 'description', 'placement_date')# 'link', )
+    list_display = ('taxopark', 'cars', 'price', 'schedule', 'description', 'placement_date', 'komission_park',
+                    'usloviya_vivoda_sredstv',)# 'link', )
 
     change_list_template = "admin/model_change_list.html"
 
