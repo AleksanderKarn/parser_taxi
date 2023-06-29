@@ -11,6 +11,7 @@ from cars.arenda_parser.config_for_arenda_auto import url_arenda_auto, list_uslo
 
 dict_data = {}
 list_tiker = []
+taxoparks = []
 
 def get_uslovia_viplat(world, arg):
     count = 0
@@ -24,7 +25,7 @@ def get_uslovia_viplat(world, arg):
                 count = 1
                 while True:
                     index_two = arg[arg.find(world) + count]
-                    if index_two == '.' or index_one == '!' or index_one == ';':
+                    if index_two == '.' or index_two == '!' or index_two == ';':
                         y = arg.find(world) + count + 2
                         break
                     else:
@@ -33,20 +34,23 @@ def get_uslovia_viplat(world, arg):
             else:
                 count += 1
 
-    print(f'Условия: {arg[x:y]}')
     return arg[x:y]
+
 
 def create_uslovia(arg):
     for world in list_usloviya_viplat:
         uslovia = get_uslovia_viplat(world, arg)
         if uslovia != '':
-            if uslovia == 'Безопасный Выв' or uslovia == 'Выв':
-                return 'Безопасный Вывод Денежных средств Ежедневно!'
             return uslovia
     return '-'
 
 
 def func(arg, block, kwargs):
+    taxopark = kwargs.find_element(By.TAG_NAME, 'p').text
+    if taxopark in taxoparks:
+        return
+    taxoparks.append(taxopark)
+
     grafic = ['5/2', '2/2', '6/1', '7/0']
     schedule = ''
     percent = '-'
@@ -56,7 +60,7 @@ def func(arg, block, kwargs):
             cars.append(car)
 
     title = block.find_element(By.CLASS_NAME, "iva-item-titleStep-pdebR").find_element(By.CLASS_NAME,
-                                                                                       'iva-item-title-py3i_').text  # названи
+                                                                                       'iva-item-title-py3i_').text  # название
     price = block.find_element(By.CLASS_NAME, "iva-item-priceStep-uq2CQ").find_element(By.CLASS_NAME,
                                                                                        'price-root-RA1pj').text  # цена
 
@@ -64,16 +68,15 @@ def func(arg, block, kwargs):
 
     if arg[percent_comission - 1].isdigit():
 
-
-        if arg[percent_comission - 1] != ' ' and percent_comission != -1 and arg[percent_comission - 1] != '0' and \
-                (arg.find('Комиссия') != -1 or arg.find('комиссия') != -1):
+        if arg[percent_comission - 1] != ' ' and percent_comission != -1 and arg[percent_comission - 1] != '0' and not arg[percent_comission - 2].isdigit() and \
+                (arg.find('Комиссия') != -1 or arg.find('комиссия') != -1 or arg.find('процент') != -1) or arg.find('комиссии') != -1:
 
             if arg[percent_comission - 2] == ',' or arg[percent_comission - 2] == '.':
                 percent = arg[percent_comission - 3] + ',' + arg[percent_comission - 1] + '%'
             else:
                 percent = arg[percent_comission - 1] + '%'
-        elif arg[percent_comission - 1] == ' ' and percent_comission != -1 and arg[percent_comission - 2] != '0' and\
-                (arg.find('Комиссия') != -1 or arg.find('комиссия') != -1):
+        elif arg[percent_comission - 1] == ' ' and percent_comission != -1 and arg[percent_comission - 2] <= '6' and not arg[percent_comission - 2].isdigit() and \
+                (arg.find('Комиссия') != - 1 or arg.find('комиссия') != -1 or arg.find('процент') != -1) or arg.find('комиссии') != -1:
 
             if arg[percent_comission - 3] == ',' or arg[percent_comission - 2] == '.':
                 percent = arg[percent_comission - 4] + ',' + arg[percent_comission - 2] + '%'
@@ -83,7 +86,9 @@ def func(arg, block, kwargs):
     uslovia = create_uslovia(arg)
 
     link = block.find_element(By.TAG_NAME, 'a').get_attribute("href")
-    taxopark = kwargs.find_element(By.TAG_NAME, 'p').text
+
+
+
     placement_date = block.find_element(By.CLASS_NAME, 'iva-item-dateInfoStep-_acjp').text
 
     for day in grafic:
@@ -121,7 +126,7 @@ def get_content_for_page():
         if page_count == 0:
             page_count = int(driver.find_elements(By.CLASS_NAME, 'styles-module-text-InivV')[-1].text)  # число страниц
 
-        if count >= 10: #page_count:
+        if count >= page_count:
             break
         count += 1
 
@@ -133,7 +138,7 @@ def get_content_for_page():
                 taxoparks = block.find_element(By.CLASS_NAME, 'style-root-uufhX')
                 func(description, block, taxoparks)
             except Exception:
-                print()
+                continue
 
         next_page = driver.find_element(By.XPATH,
                                         '//*[@id="app"]/div/div[2]/div/div[2]/div[3]/div[3]/div[4]/nav/ul/li[9]/a')
@@ -161,6 +166,7 @@ def reader():
     dict_for_read = {}
     name_companyes = []
     prices = []
+    link = []
     cars = []
     schedulers = []
     descriptions = []
@@ -168,17 +174,22 @@ def reader():
     percents = []
     uslovia = []
     for i in dict_data.values():
+        car_str = '-'
+        for car in i[0]:
+            car_str += car + ', '
+        cars.append(car_str)
         name_companyes.append(i[3])
-        cars = i[2]
+        link.append(i[2])
         prices.append(i[1])
         schedulers.append(i[5])
         descriptions.append(i[4])
         date_create.append(i[6])
         percents.append(i[7])
         uslovia.append(i[8])
-    dict_for_read["Название компании"] = name_companyes
-    dict_for_read["Машины"] = cars
-    dict_for_read["Цена"] = prices
+    dict_for_read["Название таксопарка"] = name_companyes
+    dict_for_read["Ссылка на объявление"] = link
+    dict_for_read["Марки машин"] = cars
+    dict_for_read["Цена в шапке объявления"] = prices
     dict_for_read["График"] = schedulers
     dict_for_read["Описание"] = descriptions
     dict_for_read["Дата создания объявления"] = date_create

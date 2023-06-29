@@ -6,9 +6,9 @@ from cars.parser.setting_for_parser import URL_AUTO
 
 
 def main():
-    data = get_data()
+    data = get_data()  # получил данные об авто для поиска из базы данных джанго админки
     clean_table()
-    link = format_link(URL_AUTO, data)
+    link = format_link(URL_AUTO, data)  # формирование url для поиска
     data_list = funk(data, link)
     df = pd.DataFrame(data_list)
     file_name = file_name_create(data)
