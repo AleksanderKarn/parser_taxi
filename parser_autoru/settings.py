@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'list_auto',
     'list_auto_avito',
     'arenda_avito',
-    'reports',
+    #'reports',
 ]
 
 MIDDLEWARE = [

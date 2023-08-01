@@ -5,44 +5,13 @@ from selenium.webdriver.common.by import By
 from selenium_stealth import stealth
 
 from arenda_avito.models import ArendaCar
-from cars.arenda_parser.car_list import car_list
+from cars.arenda_parser.car_list import car_list, do_2k_list
 
-from cars.arenda_parser.config_for_arenda_auto import url_arenda_auto, list_usloviya_viplat
+from cars.arenda_parser.config_for_arenda_auto import url_arenda_auto
 
 dict_data = {}
 list_tiker = []
 taxoparks = []
-
-def get_uslovia_viplat(world, arg):
-    count = 0
-    x = 0
-    y = 0
-    if arg.find(world) != -1:
-        while True:
-            index_one = arg[arg.find(world) - count]
-            if index_one == '.' or index_one == '!' or index_one == ';':
-                x = arg.find(world) - count + 2
-                count = 1
-                while True:
-                    index_two = arg[arg.find(world) + count]
-                    if index_two == '.' or index_two == '!' or index_two == ';':
-                        y = arg.find(world) + count + 2
-                        break
-                    else:
-                        count += 1
-                break
-            else:
-                count += 1
-
-    return arg[x:y]
-
-
-def create_uslovia(arg):
-    for world in list_usloviya_viplat:
-        uslovia = get_uslovia_viplat(world, arg)
-        if uslovia != '':
-            return uslovia
-    return '-'
 
 
 def func(arg, block, kwargs):
@@ -51,53 +20,32 @@ def func(arg, block, kwargs):
         return
     taxoparks.append(taxopark)
 
-    grafic = ['5/2', '2/2', '6/1', '7/0']
+    grafic = ['7/0', '6/1', '5/2', '2/2']
     schedule = ''
-    percent = '-'
-    cars = []
-    for car in car_list:
-        if arg.find(car) != -1:
-            cars.append(car)
+
+    price = block.find_element(By.CLASS_NAME, "iva-item-priceStep-uq2CQ").find_element(By.CLASS_NAME,
+                                                                                 'price-root-RA1pj').text  # цена
+    if price != "Бесплатно":
+        price = int(price.split("₽")[0].replace(" ", "").replace("от", ""))
+        if price < 1000:
+            return
+    elif price == "Бесплатно":
+        return
 
     title = block.find_element(By.CLASS_NAME, "iva-item-titleStep-pdebR").find_element(By.CLASS_NAME,
                                                                                        'iva-item-title-py3i_').text  # название
-    price = block.find_element(By.CLASS_NAME, "iva-item-priceStep-uq2CQ").find_element(By.CLASS_NAME,
-                                                                                       'price-root-RA1pj').text  # цена
 
-    percent_comission = arg.find('%')
-
-    if arg[percent_comission - 1].isdigit():
-
-        if arg[percent_comission - 1] != ' ' and percent_comission != -1 and arg[percent_comission - 1] != '0' and not arg[percent_comission - 2].isdigit() and \
-                (arg.find('Комиссия') != -1 or arg.find('комиссия') != -1 or arg.find('процент') != -1) or arg.find('комиссии') != -1:
-
-            if arg[percent_comission - 2] == ',' or arg[percent_comission - 2] == '.':
-                percent = arg[percent_comission - 3] + ',' + arg[percent_comission - 1] + '%'
+    for car in car_list:
+        if arg.find(car) != -1:
+            if car in do_2k_list and price > 2000:
+                continue
             else:
-                percent = arg[percent_comission - 1] + '%'
-        elif arg[percent_comission - 1] == ' ' and percent_comission != -1 and arg[percent_comission - 2] <= '6' and not arg[percent_comission - 2].isdigit() and \
-                (arg.find('Комиссия') != - 1 or arg.find('комиссия') != -1 or arg.find('процент') != -1) or arg.find('комиссии') != -1:
 
-            if arg[percent_comission - 3] == ',' or arg[percent_comission - 2] == '.':
-                percent = arg[percent_comission - 4] + ',' + arg[percent_comission - 2] + '%'
-            else:
-                percent = arg[percent_comission - 2] + '%'
-
-    uslovia = create_uslovia(arg)
-
-    link = block.find_element(By.TAG_NAME, 'a').get_attribute("href")
+                dict_data[title] = [car, price, taxopark, arg, schedule]  # , link, placement_date, percent, uslovia]
+                return
 
 
 
-    placement_date = block.find_element(By.CLASS_NAME, 'iva-item-dateInfoStep-_acjp').text
-
-    for day in grafic:
-        if arg.find(day) != - 1:
-            schedule += day + ', '
-    if schedule == '':
-        schedule += 'Граффик не указан'
-
-    dict_data[title] = [cars, price, link, taxopark, arg, schedule, placement_date, percent, uslovia]
 
 
 def get_content_for_page():
@@ -126,78 +74,49 @@ def get_content_for_page():
         if page_count == 0:
             page_count = int(driver.find_elements(By.CLASS_NAME, 'styles-module-text-InivV')[-1].text)  # число страниц
 
-        if count >= page_count:
+        if count >= page_count - 1:  # условие остановки парсера
             break
         count += 1
 
         for block in block_content:
             description = block.find_element(By.CLASS_NAME,
                                              "iva-item-descriptionStep-C0ty1").text  # описание обьявления
-
             try:
-                taxoparks = block.find_element(By.CLASS_NAME, 'style-root-uufhX')
+                taxoparks = block.find_element(By.CLASS_NAME, 'style-root-uufhX')  # если есть название таксопарка
                 func(description, block, taxoparks)
             except Exception:
                 continue
 
         next_page = driver.find_element(By.XPATH,
-                                        '//*[@id="app"]/div/div[2]/div/div[2]/div[3]/div[3]/div[4]/nav/ul/li[9]/a')
+                                        '//*[@id="app"]/div/div[3]/div/div[2]/div[3]/div[3]/div[4]/nav/ul/li[9]/a')
         next_page.click()
         time.sleep(1)
 
 
 def write_function():
     for value in dict_data.values():
-        cars_str = ''
-        if value[0] != []:
-            for i in value[0]:
-                cars_str += i + ', '
+        if value[0] != '':
 
-            ArendaCar.objects.create(cars=cars_str, price=value[1], link=value[2]
-                                     , taxopark=value[3], description=value[4], schedule=value[5],
-                                     placement_date=value[6], komission_park=value[7], usloviya_vivoda_sredstv=value[8])
+            ArendaCar.objects.create(cars=value[0], price=value[1], taxopark=value[2], schedule=value[4], description=value[3])  # placement_date=value[6], komission_park=value[7], description=value[4] ,link=value[2], usloviya_vivoda_sredstv=value[8])
         else:
-            ArendaCar.objects.create(cars='Машин из нашего автопарка нет', price=value[1], link=value[2]
-                                     , taxopark=value[3], description=value[4], schedule=value[5],
-                                     placement_date=value[6], komission_park=value[7], usloviya_vivoda_sredstv=value[8])
+            ArendaCar.objects.create(cars='Машин из нашего автопарка нет', price=value[1], taxopark=value[2], schedule=value[4], description=value[3])
 
 
 def reader():
     dict_for_read = {}
     name_companyes = []
     prices = []
-    link = []
     cars = []
-    schedulers = []
-    descriptions = []
-    date_create = []
-    percents = []
-    uslovia = []
+
     for i in dict_data.values():
-        car_str = '-'
-        for car in i[0]:
-            car_str += car + ', '
-        cars.append(car_str)
-        name_companyes.append(i[3])
-        link.append(i[2])
+        cars.append(i[0])
+        name_companyes.append(i[2])
         prices.append(i[1])
-        schedulers.append(i[5])
-        descriptions.append(i[4])
-        date_create.append(i[6])
-        percents.append(i[7])
-        uslovia.append(i[8])
     dict_for_read["Название таксопарка"] = name_companyes
-    dict_for_read["Ссылка на объявление"] = link
     dict_for_read["Марки машин"] = cars
     dict_for_read["Цена в шапке объявления"] = prices
-    dict_for_read["График"] = schedulers
-    dict_for_read["Описание"] = descriptions
-    dict_for_read["Дата создания объявления"] = date_create
-    dict_for_read["Комиссия парка"] = percents
-    dict_for_read["Условия выплат"] = uslovia
-
     df = pd.DataFrame(dict_for_read)
-    df.to_excel('./PRIMER.xlsx', index=False)
+    df.to_excel('./Аренда_авито_авто.xlsx', index=False)
 
 
 def _main():
